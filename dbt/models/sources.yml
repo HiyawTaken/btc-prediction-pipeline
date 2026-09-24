@@ -1,0 +1,19 @@
+version: 2
+
+sources:
+  - name: raw
+    database: "{{ env_var('GCP_PROJECT_ID') }}"
+    schema: raw
+    tables:
+      - name: btc_prices
+      - name: crypto_headlines
+      - name: headline_sentiments
+
+  # Written by Python, not dbt. Declared as a source so the performance
+  # model can read it without dbt trying to own it.
+  - name: marts
+    database: "{{ env_var('GCP_PROJECT_ID') }}"
+    schema: marts
+    tables:
+      - name: predictions
+      - name: mart_btc_features

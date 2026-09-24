@@ -1,0 +1,15 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements-api.txt .
+RUN pip install --no-cache-dir -r requirements-api.txt
+
+# only the two folders the dashboard needs; keys and .env never enter the image
+COPY src/common/ /app/common/
+COPY src/api/ /app/
+
+EXPOSE 8000
+
+# Render injects PORT; default to 8000 locally
+CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}"]

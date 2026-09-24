@@ -1,0 +1,13 @@
+# Pipeline dependencies for the daily run. torch (CPU) is installed
+# separately in the workflow from PyTorch's CPU index.
+pandas
+numpy
+pyarrow
+db-dtypes
+python-dotenv
+yfinance
+feedparser
+google-cloud-bigquery
+transformers
+dbt-core==1.11.12
+dbt-bigquery==1.12.0

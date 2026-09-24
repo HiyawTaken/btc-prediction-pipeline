@@ -1,0 +1,35 @@
+# secrets: never commit these
+.env
+.env.*
+gcp-key.json
+*-key.json
+*credentials*.json
+
+# virtualenvs
+.venv/
+.venv-*/
+venv/
+
+# python
+__pycache__/
+*.pyc
+
+# dbt build output
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+logs/
+
+# airflow local state
+.airflow/
+airflow.db
+
+# local data: everything here is rebuilt from yfinance, RSS, or BigQuery
+data/
+
+# editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+dbt/.user.yml

@@ -1,0 +1,12 @@
+.env
+*.json
+!src/**/*.json
+.venv
+venv
+data
+models
+dbt/target
+dbt/logs
+__pycache__
+*.pyc
+.git

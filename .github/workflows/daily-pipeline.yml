@@ -1,0 +1,99 @@
+name: daily-pipeline
+
+on:
+  schedule:
+    # 01:30 UTC, after the daily BTC candle closes at 00:00 UTC.
+    # GitHub can start scheduled runs late under load; that's fine here.
+    - cron: "30 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write   # lets the keepalive step re-enable the schedule
+
+concurrency:
+  group: daily-pipeline
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      AIRFLOW_VERSION: "3.3.2"
+      PYTHON_MINOR: "3.11"
+      AIRFLOW_HOME: ${{ github.workspace }}/.airflow
+      AIRFLOW__CORE__DAGS_FOLDER: ${{ github.workspace }}/dags
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      PIPELINE_ROOT: ${{ github.workspace }}
+      PIPELINE_PY: ${{ github.workspace }}/.venv-pipeline/bin/python
+      DBT_BIN: ${{ github.workspace }}/.venv-pipeline/bin/dbt
+      GCP_PROJECT_ID: btc-pipeline-508622
+      BQ_LOCATION: US
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_MINOR }}
+
+      # Both virtualenvs are cached, so installs only happen when a
+      # requirement, the Airflow version, or the Python patch version changes.
+      - id: venv-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .venv-airflow
+            .venv-pipeline
+          key: venvs-${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-af${{ env.AIRFLOW_VERSION }}-${{ hashFiles('requirements-pipeline.txt') }}
+
+      - name: Install Airflow
+        if: steps.venv-cache.outputs.cache-hit != 'true'
+        run: |
+          python -m venv .venv-airflow
+          .venv-airflow/bin/pip install --upgrade pip
+          .venv-airflow/bin/pip install \
+            "apache-airflow==${AIRFLOW_VERSION}" \
+            apache-airflow-providers-standard \
+            --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_MINOR}.txt"
+
+      - name: Install pipeline
+        if: steps.venv-cache.outputs.cache-hit != 'true'
+        run: |
+          python -m venv .venv-pipeline
+          .venv-pipeline/bin/pip install --upgrade pip
+          # CPU-only torch: ~200 MB instead of multi-GB CUDA wheels
+          .venv-pipeline/bin/pip install torch --index-url https://download.pytorch.org/whl/cpu
+          .venv-pipeline/bin/pip install -r requirements-pipeline.txt
+
+      - name: Cache sentiment model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-cryptobert-finetuned-news-headlines
+
+      - name: Write GCP credentials
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          printf '%s' "$GCP_SA_KEY" > "$RUNNER_TEMP/gcp-key.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/gcp-key.json" >> "$GITHUB_ENV"
+
+      - name: Init Airflow metadata DB
+        run: .venv-airflow/bin/airflow db migrate
+
+      - name: Record start time
+        run: echo "RUN_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
+      - name: Run DAG
+        run: .venv-airflow/bin/airflow dags test btc_daily_pipeline
+
+      - name: Verify outputs
+        run: .venv-pipeline/bin/python scripts/verify_run.py
+
+      - name: Keep schedule alive
+        if: always()
+        uses: liskin/gh-workflow-keepalive@v1

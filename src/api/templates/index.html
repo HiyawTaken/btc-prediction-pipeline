@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BTC 3-Day Direction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --ground:  #F2F3F5;
+    --panel:   #FCFCFD;
+    --ink:     #16181D;
+    --muted:   #6B7280;
+    --rule:    #D9DCE1;
+    --bull:    #1F6F52;
+    --bear:    #C4342B;
+    --ref:     #9AA1AC;
+
+    --serif: "Newsreader", Georgia, serif;
+    --sans:  "IBM Plex Sans", system-ui, sans-serif;
+    --mono:  "IBM Plex Mono", ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    padding: 56px 24px 80px;
+  }
+
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  header { margin-bottom: 40px; }
+
+  header h1 {
+    font-family: var(--serif);
+    font-size: 30px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    margin-top: 6px;
+  }
+
+  .call {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    padding: 36px 36px 30px;
+    margin-bottom: 34px;
+  }
+
+  .call-date {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .call-value {
+    font-family: var(--serif);
+    font-size: 62px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    margin-bottom: 34px;
+  }
+
+  .bull { color: var(--bull); }
+  .bear { color: var(--bear); }
+
+  .needle { margin-top: 8px; }
+
+  .needle-axis {
+    position: relative;
+    height: 1px;
+    background: var(--rule);
+    margin: 0 0 4px;
+  }
+
+  .needle-mid {
+    position: absolute;
+    top: -7px;
+    left: 50%;
+    width: 1px;
+    height: 15px;
+    background: var(--ref);
+  }
+
+  .needle-dot {
+    position: absolute;
+    top: -4px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    transform: translateX(-50%);
+    transition: left 0.5s cubic-bezier(.2,.7,.3,1);
+  }
+
+  .needle-scale {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  .needle-note {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 16px;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border: 1px solid var(--rule);
+    background: var(--panel);
+    margin-bottom: 34px;
+  }
+
+  .stat {
+    padding: 20px 18px;
+    border-right: 1px solid var(--rule);
+  }
+  .stat:last-child { border-right: none; }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .stat-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  section { margin-bottom: 34px; }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .section-note {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .chart-box {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    padding: 20px 18px 12px;
+    height: 260px;
+  }
+
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+
+  th {
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 400;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  .mark { font-family: var(--sans); }
+  .mark.hit  { color: var(--bull); }
+  .mark.miss { color: var(--bear); }
+  .pending   { color: var(--muted); }
+
+  .note {
+    font-family: var(--serif);
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--ink);
+    border-left: 2px solid var(--rule);
+    padding-left: 18px;
+  }
+
+  footer {
+    margin-top: 44px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.9;
+  }
+
+  footer a { color: var(--muted); }
+
+  .empty {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    padding: 44px 36px;
+    font-family: var(--serif);
+    font-size: 17px;
+  }
+  .empty span { display: block; font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 8px; }
+
+  @media (max-width: 620px) {
+    body { padding: 36px 16px 60px; }
+    .call { padding: 26px 22px; }
+    .call-value { font-size: 46px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .stat:nth-child(2) { border-right: none; }
+    .stat:nth-child(1), .stat:nth-child(2) { border-bottom: 1px solid var(--rule); }
+    .section-head { flex-direction: column; gap: 4px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Bitcoin · 3-day horizon</div>
+    <h1>What the model says, and whether it's worth listening to</h1>
+  </header>
+
+  {% if empty %}
+
+    <div class="empty">
+      No predictions stored yet.
+      <span>Run the pipeline to populate marts.predictions.</span>
+    </div>
+
+  {% else %}
+
+    {% set is_bull = latest.direction == 'BULLISH' %}
+
+    <div class="call">
+      <div class="call-date">Features through {{ latest.date }}</div>
+      <div class="call-value {{ 'bull' if is_bull else 'bear' }}">{{ latest.direction }}</div>
+
+      <div class="needle">
+        <div class="needle-axis">
+          <div class="needle-mid"></div>
+          <div class="needle-dot"
+               style="left: {{ (latest.raw_score * 100)|round(1) }}%;
+                      background: {{ '#1F6F52' if is_bull else '#C4342B' }};"></div>
+        </div>
+        <div class="needle-scale">
+          <span>0.00 down</span>
+          <span>0.50</span>
+          <span>up 1.00</span>
+        </div>
+        <div class="needle-note">
+          Raw score {{ '%.4f'|format(latest.raw_score) }}. The tick marks the point of no opinion.
+        </div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Hit rate</div>
+        <div class="stat-value">{{ stats.hit_rate }}%</div>
+        <div class="stat-sub">± {{ stats.margin }}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Always up</div>
+        <div class="stat-value">{{ stats.baseline_rate }}%</div>
+        <div class="stat-sub">baseline</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Edge</div>
+        <div class="stat-value">{{ '%+.1f'|format(stats.edge) }}</div>
+        <div class="stat-sub">points</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Scored</div>
+        <div class="stat-value">{{ stats.sample }}</div>
+        <div class="stat-sub">of {{ stats.total }} calls</div>
+      </div>
+    </div>
+
+    <section>
+      <div class="section-head">
+        <div class="eyebrow">Rolling 30-day hit rate</div>
+        <div class="section-note">Model against always-up</div>
+      </div>
+      <div class="chart-box"><canvas id="chart" aria-label="Rolling 30-day hit rate of the model compared with always predicting up"></canvas></div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div class="eyebrow">Recent calls</div>
+        <div class="section-note">Outcome resolves 3 days after the call</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Called</th>
+              <th>Conf.</th>
+              <th>Actual</th>
+              <th>Move</th>
+              <th><span class="visually-hidden">Result</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in recent %}
+            <tr>
+              <td>{{ row.date }}</td>
+              <td class="{{ 'bull' if row.direction == 'BULLISH' else 'bear' }}">{{ row.direction }}</td>
+              <td>{{ row.confidence }}%</td>
+              {% if row.actual %}
+                <td class="{{ 'bull' if row.actual == 'BULLISH' else 'bear' }}">{{ row.actual }}</td>
+                <td>{{ '%+.2f'|format(row.return_pct) }}%</td>
+                <td class="mark {{ 'hit' if row.is_correct else 'miss' }}"
+                    aria-label="{{ 'correct' if row.is_correct else 'wrong' }}">
+                  {{ '✓' if row.is_correct else '✗' }}
+                </td>
+              {% else %}
+                <td class="pending">pending</td>
+                <td class="pending">–</td>
+                <td class="pending"></td>
+              {% endif %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <p class="note">
+        {% if stats.within_noise %}
+          This model does not beat guessing. Across {{ stats.sample }} scored calls it hits
+          {{ stats.hit_rate }}% against a {{ stats.baseline_rate }}% baseline, inside the
+          ± {{ stats.margin }} point margin of error.
+        {% else %}
+          Across {{ stats.sample }} scored calls the model hits {{ stats.hit_rate }}% against a
+          {{ stats.baseline_rate }}% baseline, outside the ± {{ stats.margin }} point margin of error.
+        {% endif %}
+        Logistic regression and gradient boosting on the same features returned AUC 0.49.
+        The page exists to show the pipeline running end to end, not to sell a signal.
+      </p>
+    </section>
+
+    <footer>
+      <div>yfinance + Google News RSS → BigQuery → dbt → Airflow → LSTM (CuPy, from scratch) → FastAPI</div>
+      <div>
+        <a href="https://github.com/HiyawTaken" target="_blank" rel="noopener">GitHub</a> ·
+        <a href="https://huggingface.co/HiyawErtiro/cryptobert-finetuned_on_news_headlines" target="_blank" rel="noopener">Sentiment model</a> ·
+        <a href="/api/predictions">API</a>
+      </div>
+    </footer>
+
+    <script>
+      const raw = {{ chart|tojson }};
+
+      new Chart(document.getElementById('chart'), {
+        type: 'line',
+        data: {
+          labels: raw.map(d => d.date),
+          datasets: [
+            {
+              label: 'Model',
+              data: raw.map(d => d.model * 100),
+              borderColor: '#16181D',
+              borderWidth: 1.5,
+              pointRadius: 0,
+              tension: 0.25
+            },
+            {
+              label: 'Always up',
+              data: raw.map(d => d.baseline * 100),
+              borderColor: '#9AA1AC',
+              borderWidth: 1,
+              borderDash: [4, 4],
+              pointRadius: 0,
+              tension: 0.25
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? false : undefined,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 10, boxHeight: 2,
+                font: { family: 'IBM Plex Mono', size: 11 },
+                color: '#6B7280'
+              }
+            },
+            tooltip: {
+              backgroundColor: '#16181D',
+              titleFont: { family: 'IBM Plex Mono', size: 11 },
+              bodyFont:  { family: 'IBM Plex Mono', size: 11 },
+              callbacks: {
+                label: c => `${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: {
+                maxTicksLimit: 6,
+                font: { family: 'IBM Plex Mono', size: 10 },
+                color: '#9AA1AC'
+              }
+            },
+            y: {
+              min: 20, max: 80,
+              grid: { color: '#E7E9ED' },
+              border: { display: false },
+              ticks: {
+                callback: v => v + '%',
+                stepSize: 20,
+                font: { family: 'IBM Plex Mono', size: 10 },
+                color: '#9AA1AC'
+              }
+            }
+          }
+        }
+      });
+    </script>
+
+  {% endif %}
+
+</div>
+<style>
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+</style>
+</body>
+</html>
