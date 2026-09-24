@@ -6,7 +6,7 @@ The model it serves does not beat guessing. The dashboard says that on the front
 
 That was always the point of this repo. The model lives in [btc-sentiment-predictor](https://github.com/HiyawTaken/btc-sentiment-predictor), along with the story of how I proved it has no edge. This repo is the production system around it: ingestion, a warehouse, transformations, orchestration, inference, and serving. Swapping in a better model later is one file and a rerun.
 
-**Live dashboard:** [add Render URL]
+**Live dashboard:** https://btc-direction-dashboard.onrender.com
 
 ---
 
